@@ -93,8 +93,6 @@ def upload_marker(request, token):
 
 @csrf_exempt
 def locate_character(request, token):
-    print("Locating char...")
-    print(token)
     if request.method == "GET":
         grids = GridData.objects.all()
 
@@ -102,23 +100,18 @@ def locate_character(request, token):
         if not grids.exists():
             grid = GridData(grid_id=request.GET["gridId"], x_coord=0, y_coord=0, update_timestamp=None)
             grid.save()
-            print("Grid doesn't exist, returning it as 0,0")
             return HttpResponse(status=200, content=f"0;0")
 
         entry = grids.filter(pk=request.GET["gridId"])
 
         if entry.exists():
-            print("entry exists in grids")
             return HttpResponse(status=200, content=f"{entry.get().x_coord};{entry.get().y_coord}")
-
-    print("we 404'd boi")
     return HttpResponse(status=404)
 
 
 @check_token
 @csrf_exempt
 def update_character(request, token):
-    print(request.body)
     if request.method == "POST":
         char_pos = json.loads(request.body)
         if char_pos["type"] == 'located':

@@ -82,19 +82,13 @@ def user_login(request):
     }
 
     if request.method == "POST":
-        print(request.POST['username'])
-        print(request.POST['password'])
-
         user = authenticate(username=request.POST['username'], password=request.POST['password'])
 
         if user:
-            print("Found a user!!!!!")
             if user.is_active:
                 login(request, user)
                 return HttpResponseRedirect(reverse('map_index'))
         else:
-            print("hey pal you aren't registered")
-
             context["alert_message"] = "Invalid Credentials."
 
     return render(request, 'map/login.html', context)
