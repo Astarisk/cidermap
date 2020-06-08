@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    {% csrf_token %}
+    <h1>Welcome to Cider Mapping!</h1>
+    {% if user.is_authenticated %}
+        <h2>Hello {{ user.username }}!</h2>
+        <a href="{% url 'map_page' %}">Map!</a><br>
+
+        <ul>
+            {% for token in tokens %}
+
+                <li>{{ token.token }}</li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'generate_token' %}">Generate a token!</a><br>
+        <a href="{% url 'map_logout' %}">Logout</a>
+    {%  else %}
+        <h2>Please
+            <a href="{% url 'map_login' %}">Login</a>
+            to continue!</h2>
+    {% endif %}
+</body>
+</html>

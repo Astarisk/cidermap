@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Map!</title>
+
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+       integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+       crossorigin=""/>
+
+     <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+             integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+             crossorigin=""></script>
+
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.2.4/pixi.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/leaflet-pixi-overlay@1.8.1/L.PixiOverlay.min.js"></script>
+</head>
+<body>
+    <style>
+	html, body {
+		height: 100%;
+		margin: 0;
+		padding: 0;
+	  }
+	#map {
+		height: 100%;
+	}
+
+	#location {
+		position: absolute;
+		left: 0px;
+		top: 0px;
+		z-index: 110;
+		font-size:10;
+		color: black;
+		font-family: Verdana, Helvetica;
+	}
+
+	.gridTile {
+		color: white;
+		text-shadow:
+		-1px -1px 0 #000,
+		1px -1px 0 #000,
+		-1px 1px 0 #000,
+		1px 1px 0 #000;
+		font-weight: bold;
+	}
+    </style>
+
+<div id="map"></div>
+
+<script>
+
+	var origin = convertPointToLatLng(L.point(gup("x","0"), gup("y","0")));
+	var simple = gup("simple", "false");
+	var tileURL = "./api/tile/{z}/{x}/{y}";
+	if (simple == "true") {
+		tileURL = "./api/stile/{z}/{x}/{y}";
+	}
+	var map = L.map('map', {
+		crs: L.CRS.Simple,
+		minZoom: 3,
+		maxZoom: 9,
+  		fullscreenControl: true,
+  		fullscreenControlOptions: {
+    		position: 'topleft'
+  		}
+	}).setView([origin.lat, origin.lng], gup("zoom", "9"));
+
+	L.tileLayer(tileURL, {
+		tileSize: 100,
+		id: 'haven'
+	}).addTo(map);
+
+	L.GridLayer.DebugCoords = L.GridLayer.extend({
+		createTile: function (coords) {
+			var factor = Math.pow(2,9 - coords.z);
+			var x = ((coords.x) * factor);
+			var y = ((coords.y) * factor);
+			var div = document.createElement('div');
+			div.innerHTML = "(" + x + "," + y + ")";
+			div.style.width = 100 + 'px';
+			div.style.height = 100 + 'px';
+			div.style.fontSize = '10';
+			div.style.borderStyle = 'solid';
+			div.style.borderWidth = '1px';
+			div.style.borderColor = '#000000';
+			div.className = "gridTile";
+			return div;
+		}
+	});
+
+	L.gridLayer.debugCoords = function(opts) {
+		return new L.GridLayer.DebugCoords(opts);
+	};
+
+	map.addLayer( L.gridLayer.debugCoords(
+	{
+		tileSize: 100
+	}));
+
+	//Events
+	map.on('moveend', onMoveEnd);
+
+    let myRenderer = L.canvas({ padding: 0.5 });
+    let loader = new PIXI.Loader();
+
+    {% for marker_image in marker_images %}
+        {% static marker_image.image as icon_url %}
+        loader.add('{{ marker_image.image }}', ' {{ icon_url }}.png');
+    {% endfor%}
+
+
+    // Manually add in the Player Image for now
+    {% static 'gfx/terobjs/mm/player' as icon_url %}
+    loader.add('gfx/terobjs/mm/player', ' {{ icon_url }}.png');
+    //document.addEventListener("DOMContentLoaded", function() {
+
+    function createMarker(marker, resources, project, utils) {
+        // Two types of markers: Player and Map
+        let markerTexture = resources[marker.image].texture;
+        let markerSprite = new PIXI.Sprite(markerTexture);
+
+        // Common elements between the two marker types
+        let latlng = L.CRS.Simple.pointToLatLng(L.point(marker.x, marker.y), 9);
+        latlng = project(latlng);
+
+        markerSprite.x = latlng.x;
+        markerSprite.y = latlng.y;
+
+        // Center of the sprite is where the marker points towards.
+        markerSprite.anchor.set(0.5, 0.5);
+
+        markerSprite.interactive = true;
+        markerSprite.message = null;
+
+        // Lifespan information
+        markerSprite.delete_marker = false;
+
+        // Text Style and attachable Text to the sprite
+
+        let textStyle = {
+            fontSize: '18px', fontFamily: 'Arial', fill: 'rgb(0,255,0)',
+            align: 'center', stroke: 'black', strokeThickness: 2
+        };
+        let message = new PIXI.Text(marker.name, textStyle);
+        // Offset it to the top and center of the sprite.
+        message.anchor.x = 0.5;
+        message.anchor.y = 1;
+        markerSprite.addChild(message);
+
+        return markerSprite;
+    }
+
+    (function (){
+        loader.load(function (loader, resources) {
+            console.log(resources);
+            let pixiContainer = new PIXI.Container();
+
+            let markerSprites = [];
+            let playerMarkerSprites = [];
+
+            let markers = JSON.parse(getMarkers());
+            let playerMarkers = JSON.parse(getPlayerMarkers());
+
+            let firstDrawMapMarkers = true;
+            let redrawPlayerMarkers = true;
+
+            let prevZoom;
+
+            // CallBack function is the draw method
+            let pixiOverlay = L.pixiOverlay(function (utils, event) {
+                let zoom = utils.getMap().getZoom();
+                let container = utils.getContainer();
+                let renderer = utils.getRenderer();
+                let project = utils.latLngToLayerPoint;
+                let scale = utils.getScale();
+
+                if (event.type === 'redraw') {
+                    // Clear the container of old player sprites
+                    playerMarkerSprites.forEach(function (markerSprite, resources, utils) {
+                        container.removeChild(markerSprite)
+                    });
+                    playerMarkerSprites = [];
+                    playerMarkers = JSON.parse(getPlayerMarkers());
+                    redrawPlayerMarkers = true;
+                }
+
+                // This will initialize the markerSprite list
+                if (firstDrawMapMarkers) {
+                    // Two types of markers: Player and Map
+                    markers.forEach(function (marker) {
+                        let markerTexture = resources[marker.image].texture;
+                        let markerSprite = new PIXI.Sprite(markerTexture);
+
+                        // Common elements between the two marker types
+                        let latlng = L.CRS.Simple.pointToLatLng(L.point(marker.x, marker.y), 9);
+                        latlng = project(latlng);
+
+                        markerSprite.x = latlng.x;
+                        markerSprite.y = latlng.y;
+
+                        // Center of the sprite is where the marker points towards.
+                        markerSprite.anchor.set(0.5, 0.5);
+
+                        markerSprite.interactive = true;
+                        markerSprite.message = null;
+
+                        // Lifespan information
+                        markerSprite.delete_marker = false;
+
+                        // Text Style and attachable Text to the sprite
+
+                        let textStyle = {
+                            fontSize: '18px', fontFamily: 'Arial', fill: 'rgb(0,255,0)',
+                            align: 'center', stroke: 'black', strokeThickness: 2
+                        };
+                        let message = new PIXI.Text(marker.name, textStyle);
+                        // Offset it to the top and center of the sprite.
+                        message.anchor.x = 0.5;
+                        message.anchor.y = 1;
+
+
+                        markerSprite.on('mouseover', function (e) {
+                            markerSprite.addChild(message);
+                            //Trigger a draw update
+                            pixiOverlay.redraw({type: 'redraw'});
+
+                        });
+
+                        markerSprite.on('mouseout', function (e) {
+                            markerSprite.removeChild(message);
+                            pixiOverlay.redraw({type: 'redraw'});
+                        });
+                        markerSprites.push(markerSprite);
+                    });
+                }
+
+                if(redrawPlayerMarkers) {
+                    playerMarkers.forEach(function (marker) {
+                        let markerTexture = resources[marker.image].texture;
+                        let markerSprite = new PIXI.Sprite(markerTexture);
+
+                        // Common elements between the two marker types
+                        let latlng = L.CRS.Simple.pointToLatLng(L.point(marker.x, marker.y), 9);
+                        latlng = project(latlng);
+
+                        markerSprite.x = latlng.x;
+                        markerSprite.y = latlng.y;
+
+                        // Center of the sprite is where the marker points towards.
+                        markerSprite.anchor.set(0.5, 1);
+
+                        markerSprite.interactive = true;
+                        markerSprite.message = null;
+
+                        // Lifespan information
+                        markerSprite.delete_marker = false;
+
+                        // Text Style and attachable Text to the sprite
+                        let textStyle = {
+                            fontSize: '18px', fontFamily: 'Arial', fill: 'rgb(0,255,0)',
+                            align: 'center', stroke: 'black', strokeThickness: 2
+                        };
+                        let message = new PIXI.Text(marker.name, textStyle);
+
+                        // Offset it to the top and center of the sprite.
+                        message.anchor.x = 0.5;
+                        message.anchor.y = 1;
+
+                        // Since the player name is on all the time just add it to the child.
+                        markerSprite.addChild(message);
+
+                        playerMarkerSprites.push(markerSprite);
+                    });
+                }
+
+                if (firstDrawMapMarkers || prevZoom !== zoom) {
+                    markerSprites.forEach(function (markerSprite) {
+                        if (firstDrawMapMarkers) {
+                        } else {
+                        }
+                        markerSprite.scale.set(1 / scale);
+                    });
+                    firstDrawMapMarkers = false;
+                }
+
+                if (redrawPlayerMarkers || prevZoom !== zoom) {
+                    playerMarkerSprites.forEach(function (markerSprite) {
+                        if (redrawPlayerMarkers) {
+                        } else {
+                        }
+                        markerSprite.scale.set(1 / scale);
+                    });
+                    redrawPlayerMarkers = false
+                }
+
+                prevZoom = zoom;
+
+
+                // Add the markers to the container to be rendered.
+                markerSprites.forEach(function (marker) {
+                        container.addChild(marker);
+                });
+
+                playerMarkerSprites.forEach(function (marker) {
+                        container.addChild(marker);
+                });
+
+                renderer.render(container);
+                }, pixiContainer);
+                pixiOverlay.addTo(map);
+
+
+                // Keep updating the player markers
+                this.intervalId = setInterval(() => {
+                   pixiOverlay.redraw({type: 'redraw'});
+                }, 2000);
+        });
+    })();
+
+	function getMarkers() {
+        let Httpreq = new XMLHttpRequest(); // a new request
+        Httpreq.open("GET"," {% url 'get_markers' %}",false);
+        Httpreq.send(null);
+        return Httpreq.responseText;
+    }
+
+    function getPlayerMarkers() {
+        let Httpreq = new XMLHttpRequest(); // a new request
+        Httpreq.open("GET"," {% url 'get_player_markers' %}",false);
+        Httpreq.send(null);
+        return Httpreq.responseText;
+    }
+
+    function convertPoint(coord) {
+        return coord / 100;
+    }
+
+	function onMoveEnd(e) {
+		let coords = convertLatLngToPoint(map.getCenter());
+		if (simple == "true") {
+			location.hash = "#x=" + Math.round(coords.x * 100) / 100 + "&y=" + Math.round(coords.y * 100) / 100 + "&zoom=" + map.getZoom() + "&simple=true";
+		} else {
+                	location.hash = "#x=" + Math.round(coords.x * 100) / 100 + "&y=" + Math.round(coords.y * 100) / 100 + "&zoom=" + map.getZoom();
+		}
+	}
+
+	function convertLatLngToPoint(latlng) {
+		let coords = L.CRS.Simple.latLngToPoint(latlng, 9);
+		let x = coords.x / 100.0;
+		let y = coords.y / 100.0;
+		return L.point(x, y);
+	}
+
+	function convertPointToLatLng(coords) {
+		let lat = coords.x * 100;
+		let lng = coords.y * 100;
+		let latlng = L.CRS.Simple.pointToLatLng(L.point(lat, lng), 9);
+		return latlng;
+	}
+
+	//Get URL Parameter
+	function gup(name,dflt) {
+		name = name.replace(/[[]/,"\\\[").replace(/[]]/,"\\\]");
+		let regexS = "[?#&]"+name+"=([^&#]*)";
+		let regex = new RegExp( regexS );
+		let results = regex.exec( window.location.href );
+		if( results == null )
+			return dflt;
+		else
+			return results[1];
+	}
+</script>
+</body>
+</html>
