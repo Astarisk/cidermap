@@ -21,17 +21,11 @@ tile_cache = {}
 def map_index(request):
     context = {}
     if request.user.is_authenticated:
-
         context['tokens'] = request.user.generatedtoken_set.all()
-        print(context['tokens'])
-    else:
-        #print("haaah")
-        pass
     return render(request, "map/index.html", context)
 
 
 def map_page(request, token=""):
-    print("regular map_page....")
     if request.user.is_authenticated:
         # A Quick and dirty way to grab the URLS to the map icons
         context = {'marker_images': MarkerData.objects.all().values('image').distinct()}

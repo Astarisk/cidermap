@@ -14,7 +14,7 @@
         <ul>
             {% for token in tokens %}
 
-                <li>{{ token.token }}</li>
+                <li>  {{ request.get_host }} /client/{{ token.token }}</li>
             {% endfor %}
         </ul>
         <a href="{% url 'generate_token' %}">Generate a token!</a><br>
