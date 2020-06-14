@@ -1,0 +1,7 @@
+asgiref==3.2.7
+Django==3.0.6
+django-compat==1.0.15
+Pillow==7.1.2
+pytz==2020.1
+six==1.15.0
+sqlparse==0.3.1
