@@ -6,13 +6,7 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     container_name: cider-map
     volumes:
-      - /srv/cider-map:/cider-map/map_grids
+      - .:/cider-map
     ports:
-      - "8000:8000"
-    depends_on:
-      - migration
+      - "8420:8000"
 
-  migration:
-    command: python manage.py makemigrations map && python manage.py makemigrations myapi && python manage.py migrate
-    volumes:
-      - /srv/cider-map:/cider-map/map_grids
