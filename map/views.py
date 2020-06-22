@@ -129,7 +129,7 @@ def generate_zoom_layers(request):
     return HttpResponseRedirect(reverse('map_index'))
 
 
-def generate_zoom(request, initial_mapping, in_layer):
+def generate_zoom(initial_mapping, in_layer):
     start = time.time()
     new_mapping = set()
     out_layer = in_layer - 1

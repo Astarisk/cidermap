@@ -10,6 +10,8 @@ ADD . /cider-map/
 
 RUN pip install -r requirements.txt
 
+RUN python manage.py migrate
+
 RUN python manage.py makemigrations map
 
 RUN python manage.py makemigrations myapi

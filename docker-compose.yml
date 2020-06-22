@@ -9,4 +9,10 @@ services:
       - /srv/cider-map:/cider-map/map_grids
     ports:
       - "8000:8000"
-    
+    depends_on:
+      - migration
+
+  migration:
+    command: python manage.py makemigrations map && python manage.py makemigrations myapi && python manage.py migrate
+    volumes:
+      - /srv/cider-map:/cider-map/map_grids
