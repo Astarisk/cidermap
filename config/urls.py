@@ -57,6 +57,8 @@ urlpatterns = [
     path('', map_views.map_index, name="map_index"),
     path('map/', map_views.map_page, name="map_page"),
     path('login/', map_views.user_login, name="map_login"),
-    path('logout/', map_views.user_logout, name="map_logout")
+    path('generateZoom/', map_views.generate_zoom_layers, name="map_logout"),
+
+    path('logout/', map_views.user_logout, name="generate_zoom")
 ]
 

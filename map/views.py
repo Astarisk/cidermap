@@ -12,7 +12,7 @@ from django.contrib.auth.decorators import login_required
 from PIL import Image
 from math import floor
 
-from myapi.models import GridData, MarkerData
+from myapi.models import Grid, MarkerData
 from .forms import CustomUserCreationForm
 
 tile_cache = {}
@@ -37,6 +37,7 @@ def map_page(request, token=""):
 # I'm sure there is some way in the urls.conf to do what I want but I don't know how yet.
 def map_page2(request, token):
     return HttpResponseRedirect(reverse('map_page'))
+
 
 @login_required
 def user_logout(request):
@@ -104,7 +105,7 @@ def get_tile(request, zoom, x_coord, y_coord, token=""):
 
 
 def generate_zoom_mapping():
-    grids = GridData.objects.all()
+    grids = Grid.objects.all()
 
     mapping = set()
 
@@ -114,6 +115,7 @@ def generate_zoom_mapping():
     return mapping
 
 
+@login_required
 def generate_zoom_layers(request):
     print(time.time())
     # Goes from 3 to 9 (uploaded tiles)
@@ -124,8 +126,10 @@ def generate_zoom_layers(request):
     initial_mapping = generate_zoom(initial_mapping, 5)
     print(time.time())
 
+    return HttpResponseRedirect(reverse('map_index'))
 
-def generate_zoom(initial_mapping, in_layer):
+
+def generate_zoom(request, initial_mapping, in_layer):
     start = time.time()
     new_mapping = set()
     out_layer = in_layer - 1

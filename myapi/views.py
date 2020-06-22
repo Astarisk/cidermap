@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import GridData, MarkerData, LostMarkerData, CharacterLocation, GeneratedToken
+from .models import Grid, MarkerData, LostMarkerData, CharacterLocation, GeneratedToken
 from .decorators import check_token
 
 
@@ -32,7 +32,7 @@ def update_grid(request, token):
     if request.method == "POST":
         x_coord = request.POST["x"]
         y_coord = request.POST["y"]
-        grid = GridData(grid_id=request.POST["id"], x_coord=x_coord, y_coord=y_coord,
+        grid = Grid(grid_id=request.POST["id"], x_coord=x_coord, y_coord=y_coord,
                         update_timestamp=timezone.now())
         # TODO: Saving of the tile is disabled until the tile renderer on the client is updated for simple maps.
         grid.save()
@@ -75,7 +75,7 @@ def upload_marker(request, token):
                 if 'SEA_MARK:THEIRS,' in marker['name']:
                     image = "gfx/terobjs/mm/enemyseamark"
 
-                grid = GridData.objects.filter(grid_id=marker['gridId'])
+                grid = Grid.objects.filter(grid_id=marker['gridId'])
 
                 # Markers that have a known grid id
                 if grid.exists():
@@ -94,11 +94,11 @@ def upload_marker(request, token):
 @csrf_exempt
 def locate_character(request, token):
     if request.method == "GET":
-        grids = GridData.objects.all()
+        grids = Grid.objects.all()
 
         # If no entries exist in the database, set the received gridID as the 0,0 location
         if not grids.exists():
-            grid = GridData(grid_id=request.GET["gridId"], x_coord=0, y_coord=0, update_timestamp=None)
+            grid = Grid(grid_id=request.GET["gridId"], x_coord=0, y_coord=0, update_timestamp=None)
             grid.save()
             return HttpResponse(status=200, content=f"0;0")
 
@@ -152,7 +152,7 @@ def get_markers(request):
         markers = []
 
         for d in data:
-            grid = GridData.objects.filter(pk=d.grid_id).get()
+            grid = Grid.objects.filter(pk=d.grid_id).get()
 
             x = d.x_coord + grid.x_coord * 100
             y = d.y_coord + grid.y_coord * 100
@@ -177,7 +177,7 @@ def generate_token(request):
 def mapdata_index(request, token):
     #tokens = GeneratedToken.objects.all().filter(token=token)
     #if tokens.exists():
-    grids = GridData.objects.all()
+    grids = Grid.objects.all()
 
     s = ""
     for grid in grids:

@@ -31,16 +31,6 @@ class Grid(models.Model):
         return f"{self.grid_id} - ({self.x_coord} , {self.y_coord})"
 
 
-class GridData(models.Model):
-    grid_id = models.IntegerField(primary_key=True)
-    x_coord = models.IntegerField(null=False)
-    y_coord = models.IntegerField(null=False)
-    update_timestamp = models.DateTimeField(null=True)
-
-    def __str__(self):
-        return f"{self.grid_id} - ({self.x_coord} , {self.y_coord})"
-
-
 class CharacterLocation(models.Model):
     name = models.TextField()
     gob_id = models.IntegerField()
