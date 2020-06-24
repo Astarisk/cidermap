@@ -93,7 +93,7 @@ def user_login(request):
 @csrf_exempt
 def get_tile(request, zoom, x_coord, y_coord):
     try:
-        tmp_img = tile_cache.get(f"{zoom}_{x_coord}_{y_coord}")
+        tmp_img = tile_cache.get(f"{zoom}/{x_coord}/{y_coord}")
         if tmp_img:
             return HttpResponse(status=200, content=tmp_img, content_type='image/png')
         else:
