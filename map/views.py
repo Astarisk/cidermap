@@ -91,15 +91,15 @@ def user_login(request):
 
 @login_required
 @csrf_exempt
-def get_tile(request, zoom, x_coord, y_coord, token=""):
+def get_tile(request, zoom, x_coord, y_coord):
     try:
         tmp_img = tile_cache.get(f"{zoom}_{x_coord}_{y_coord}")
         if tmp_img:
-            return HttpResponse(status=200, content=tile_cache["{zoom}/{x_coord}/{y_coord}"])
+            return HttpResponse(status=200, content=tmp_img, content_type='image/png')
         else:
-            tmp_img = open(f"./map_grids/{zoom}/{x_coord}_{y_coord}.png", "rb", buffering=0)
-            tile_cache["{zoom}/{x_coord}/{y_coord}"] = tmp_img
-        return HttpResponse(status=200, content=tmp_img)
+            tmp_img = open(f"./map_grids/{zoom}/{x_coord}_{y_coord}.png", "rb", buffering=0).read()
+            tile_cache[f"{zoom}/{x_coord}/{y_coord}"] = tmp_img
+        return HttpResponse(status=200, content=tmp_img, content_type='image/png')
     except FileNotFoundError:
         return HttpResponse(status=404)
 
