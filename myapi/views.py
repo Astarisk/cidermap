@@ -28,7 +28,7 @@ def handle_minimap_upload(f, path):
 
 @check_token
 @csrf_exempt
-def update_grid(request, token):
+def update_grid(request):
     if request.method == "POST":
         x_coord = request.POST["x"]
         y_coord = request.POST["y"]
@@ -44,7 +44,7 @@ def update_grid(request, token):
 
 @check_token
 @csrf_exempt
-def upload_marker(request, token):
+def upload_marker(request):
     if request.method == "POST":
         markers = json.loads(request.body)
 
@@ -92,7 +92,7 @@ def upload_marker(request, token):
 
 
 @csrf_exempt
-def locate_character(request, token):
+def locate_character(request):
     if request.method == "GET":
         grids = Grid.objects.all()
 
@@ -111,7 +111,7 @@ def locate_character(request, token):
 
 @check_token
 @csrf_exempt
-def update_character(request, token):
+def update_character(request):
     if request.method == "POST":
         char_pos = json.loads(request.body)
         if char_pos["type"] == 'located':
@@ -174,7 +174,7 @@ def generate_token(request):
 
 @check_token
 @csrf_exempt
-def mapdata_index(request, token):
+def mapdata_index(request):
     #tokens = GeneratedToken.objects.all().filter(token=token)
     #if tokens.exists():
     grids = Grid.objects.all()
@@ -186,3 +186,28 @@ def mapdata_index(request, token):
     return HttpResponse(status=200, content=s)
 #return HttpResponse('Unauthorized', status=401)
 
+
+
+def dowork(markers):
+    list = []
+    for marker in markers:
+        image = "gfx/terobjs/mm/custom"
+        try:
+            if marker["image"]:
+                image = marker["image"]
+        except KeyError:
+            pass
+
+        if 'BORDER_CAIRN:OURS' in marker['name']:
+            image = "gfx/terobjs/mm/frendcairn"
+        if 'BORDER_CAIRN:THEIRS' in marker['name']:
+            image = "gfx/terobjs/mm/enemycairn"
+
+        if 'SEA_MARK:OURS' in marker['name']:
+            image = "gfx/terobjs/mm/seamark"
+        if 'SEA_MARK:THEIRS,' in marker['name']:
+            image = "gfx/terobjs/mm/enemyseamark"
+
+        data = models.MarkerData(grid_id=-1, x_coord=marker['position']['x'], y_coord=marker['position']['y'], image=image, name=marker['name'], hidden=bool(marker['hidden']))
+        list.append(data)
+    return list
