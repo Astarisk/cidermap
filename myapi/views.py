@@ -175,8 +175,6 @@ def generate_token(request):
 @check_token
 @csrf_exempt
 def mapdata_index(request):
-    #tokens = GeneratedToken.objects.all().filter(token=token)
-    #if tokens.exists():
     grids = Grid.objects.all()
 
     s = ""
@@ -184,30 +182,3 @@ def mapdata_index(request):
         s += f"{grid.grid_id},{grid.x_coord},{grid.y_coord}\n"
 
     return HttpResponse(status=200, content=s)
-#return HttpResponse('Unauthorized', status=401)
-
-
-
-def dowork(markers):
-    list = []
-    for marker in markers:
-        image = "gfx/terobjs/mm/custom"
-        try:
-            if marker["image"]:
-                image = marker["image"]
-        except KeyError:
-            pass
-
-        if 'BORDER_CAIRN:OURS' in marker['name']:
-            image = "gfx/terobjs/mm/frendcairn"
-        if 'BORDER_CAIRN:THEIRS' in marker['name']:
-            image = "gfx/terobjs/mm/enemycairn"
-
-        if 'SEA_MARK:OURS' in marker['name']:
-            image = "gfx/terobjs/mm/seamark"
-        if 'SEA_MARK:THEIRS,' in marker['name']:
-            image = "gfx/terobjs/mm/enemyseamark"
-
-        data = models.MarkerData(grid_id=-1, x_coord=marker['position']['x'], y_coord=marker['position']['y'], image=image, name=marker['name'], hidden=bool(marker['hidden']))
-        list.append(data)
-    return list
