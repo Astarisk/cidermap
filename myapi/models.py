@@ -22,7 +22,7 @@ def media_directory_path(instance, filename):
 
 
 class Grid(models.Model):
-    grid_id = models.IntegerField(primary_key=True)
+    grid_id = models.BigIntegerField(primary_key=True)
     x_coord = models.IntegerField(null=False)
     y_coord = models.IntegerField(null=False)
     update_timestamp = models.DateTimeField(default=timezone.now)
@@ -33,7 +33,7 @@ class Grid(models.Model):
 
 class CharacterLocation(models.Model):
     name = models.TextField()
-    gob_id = models.IntegerField()
+    gob_id = models.BigIntegerField()
     x_coord = models.IntegerField()
     y_coord = models.IntegerField()
     time_added = models.DateTimeField(default=timezone.now)
@@ -46,7 +46,7 @@ class CharacterLocation(models.Model):
 
 
 class MarkerData(models.Model):
-    grid_id = models.IntegerField()
+    grid_id = models.BigIntegerField()
     name = models.TextField()
     image = models.TextField()
     x_coord = models.IntegerField(null=False)
@@ -59,7 +59,7 @@ class MarkerData(models.Model):
 
 
 class LostMarkerData(models.Model):
-    grid_id = models.IntegerField()
+    grid_id = models.BigIntegerField()
     name = models.TextField()
     image = models.TextField()
     x_coord = models.IntegerField(null=False)
