@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -30,14 +30,31 @@ def handle_minimap_upload(f, path):
 @csrf_exempt
 def update_grid(request):
     if request.method == "POST":
+
+        grid_id = request.POST["id"]
         x_coord = request.POST["x"]
         y_coord = request.POST["y"]
-        grid = Grid(grid_id=request.POST["id"], x_coord=x_coord, y_coord=y_coord,
-                        update_timestamp=timezone.now())
-        # TODO: Saving of the tile is disabled until the tile renderer on the client is updated for simple maps.
-        grid.save()
 
-        handle_minimap_upload(request.FILES['file'], f"./map_grids/9/{x_coord}_{y_coord}.png")
+        obj, created = Grid.objects.get_or_create(
+            grid_id=grid_id,
+            x_coord=x_coord,
+            y_coord=y_coord
+        )
+
+        if created:
+            # First time being made so save the grid.
+            handle_minimap_upload(request.FILES['file'], f"./map_grids/9/{x_coord}_{y_coord}.png")
+        else:
+            # Update the saved minimap file.
+            updated_time = timezone.now()
+            threshhold = timedelta(minutes=20)
+
+            if updated_time - obj.update_timestamp > threshhold:
+                obj.update_timestamp = updated_time
+                obj.save()
+
+                # Refresh the saved minimap file.
+                handle_minimap_upload(request.FILES['file'], f"./map_grids/9/{x_coord}_{y_coord}.png")
 
     return HttpResponse(status=200)
 
