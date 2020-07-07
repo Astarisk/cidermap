@@ -5,7 +5,7 @@ from .models import GeneratedToken
 
 def check_token(view_func):
     @wraps(view_func)
-    def new_view_func(request,*args, **kwargs):
+    def new_view_func(request, *args, **kwargs):
         tokens = GeneratedToken.objects.all().filter(token=kwargs['token'])
         if tokens.exists():
             return view_func(request, *args, **kwargs)

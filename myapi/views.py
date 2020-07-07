@@ -28,7 +28,7 @@ def handle_minimap_upload(f, path):
 
 @check_token
 @csrf_exempt
-def update_grid(request):
+def update_grid(request, token):
     if request.method == "POST":
 
         grid_id = request.POST["id"]
@@ -61,7 +61,7 @@ def update_grid(request):
 
 @check_token
 @csrf_exempt
-def upload_marker(request):
+def upload_marker(request, token):
     if request.method == "POST":
         markers = json.loads(request.body)
 
@@ -107,7 +107,6 @@ def upload_marker(request):
     return HttpResponse(status=200)
 
 
-
 @csrf_exempt
 def locate_character(request):
     if request.method == "GET":
@@ -128,7 +127,7 @@ def locate_character(request):
 
 @check_token
 @csrf_exempt
-def update_character(request):
+def update_character(request, token):
     if request.method == "POST":
         char_pos = json.loads(request.body)
         if char_pos["type"] == 'located':
@@ -191,7 +190,7 @@ def generate_token(request):
 
 @check_token
 @csrf_exempt
-def mapdata_index(request):
+def mapdata_index(request, token):
     grids = Grid.objects.all()
 
     s = ""
