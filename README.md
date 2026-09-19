@@ -8,7 +8,7 @@ This is an older personal project. The repository contains the mapping service a
 
 - Client endpoints for grid images and coordinates, character positions, markers, and a grid index.
 - Django user accounts and generated tokens for client uploads.
-- A Leaflet map with Leaflet.PixiOverlay for landmark and player sprites, including periodic player-position refreshes.
+- A Leaflet map that uses Leaflet.PixiOverlay to render large numbers of landmark and player markers efficiently, including periodic player-position refreshes.
 - PNG map tiles on disk, with Pillow routines that combine tiles into lower zoom levels.
 - Django admin for managing users and stored map data.
 
